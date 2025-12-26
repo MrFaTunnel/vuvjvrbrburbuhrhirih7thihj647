@@ -1,0 +1,24 @@
+#!/bin/bash
+
+echo "--- 1. Настройка репозиториев (убираем запрос диска) ---"
+sed -i 's/^deb cdrom/# deb cdrom/' /etc/apt/sources.list
+echo "deb https://dl.astralinux.ru/astra/frozen/1.8_x86-64/main/ repository base" >> /etc/apt/sources.list
+echo "deb https://dl.astralinux.ru/astra/frozen/1.8_x86-64/extended/ repository extended" >> /etc/apt/sources.list
+
+echo "--- 2. Обновление и установка SSH ---"
+apt update && apt install -y openssh-server tailscale fail2ban
+
+echo "--- 3. Настройка системы (не засыпать при закрытии крышки) ---"
+sed -i 's/#HandleLidSwitch=suspend/HandleLidSwitch=ignore/' /etc/systemd/logind.conf
+systemctl restart systemd-logind
+systemctl enable --now ssh
+
+echo "--- 4. Запуск Tailscale ---"
+tailscale up --authkey=ВАШ_КЛЮЧ_ЕСЛИ_ЕСТЬ # Если ключа нет, просто удалите эту часть или введите потом вручную
+
+echo "-------------------------------------------------------"
+echo "ГОТОВО!"
+echo "Ваш локальный IP: $(hostname -I | awk '{print $1}')"
+echo "Ваш Tailscale IP (для дома): $(tailscale ip -4)"
+echo "Команда для входа: ssh $(whoami)@$(tailscale ip -4)"
+echo "-------------------------------------------------------"
